@@ -1,0 +1,210 @@
+default dadsukihp = 1000
+default yaseminhp = 1000
+default medkit_inventory = 3
+default grenade_inventory = 2
+
+init python:
+
+
+    def stats_frame(name, level, hp, maxhp, **properties):
+
+        ui.frame(xfill=False, yminimum=None, **properties)
+
+        ui.hbox() # (name, "HP", bar) from (level, hp, maxhp)
+        ui.vbox() # name from ("HP", bar)
+
+        ui.text(name, size=20)
+
+        ui.hbox() # "HP" from bar
+        ui.text("HP", size=20)
+        #ui.bar(maxhp, hp,
+               #xmaximum=150)
+
+        ui.close()
+        ui.close()
+
+        ui.vbox() # Level from (hp/maxhp)
+
+        ui.text("Lv. %d" % level, xalign=0.5, size=20)
+        ui.text("%d/%d" % (hp, maxhp), xalign=0.5, size=20)
+
+        ui.close()
+        ui.close()
+
+label fight(d_name, elevel, dadsukihp, maxhp1, y_name, plevel, yaseminhp, maxhp2):
+    $ stats_frame(y_name, plevel, yaseminhp, maxhp2, xalign=.02, yalign=.05)
+    $ stats_frame(d_name, elevel, dadsukihp, maxhp1, xalign=.98, yalign=.05)
+
+    return
+
+label dadsuki_boss_battle:
+    $ dadsukihp = 350
+    $ yaseminhp = 199
+    $ medkit_inventory = 3
+    $ grenade_inventory = 2
+    #if poemsread == 0:
+
+    label dadsukibattle_loop:
+        show dadsuki 3
+        show yasemin 4y7
+    label dadsukibattle_start2:
+        $ dadsuki_hit_response = ["Ow, you cunt!", "Choke on it", "Didn't even scratch me!"]
+        $ dadsuki_attack_response = ["Think you can raise my kids better than me?", "Maybe you should have minded your own business, bitch!", "Choke on it!"]
+        if renpy.random.randint(0,4) == 0:
+            call dbdadsuki_attack
+        call fight(d_name, 10, dadsukihp, 350, y_name, 4, yaseminhp, 199) from _call_fight_1
+        show dadsuki 3
+        show yasemin 4y7
+        $ menutext = " "
+
+        #Show a choice for each girl you need to show the poem to
+        #Don't show the choice if you've already read their poem
+        menu:
+            "Inventory:\nMedkits: [medkit_inventory]\nGrenades: [grenade_inventory]"
+#            "YURI HP: [yaseminhp]\nDADSUKI HP: [dadsukihp]"
+
+
+            "Knife Attack":
+                call dbknifeattack
+            "Grenade":
+                call dbgrenade
+            "Punch":
+                call dbpunch
+            "Medkit":
+
+                call dbmedkit
+
+        if dadsukihp <= 0:
+            $ yasemin_won = True
+            return
+        if yaseminhp <= 0:
+            $ yasemin_won = False
+            return
+        else:
+            jump dadsukibattle_loop
+
+    return
+
+
+
+label dbknifeattack:
+    $ dadsukihp -= 15
+    show white zorder 4:
+        alpha 0.6
+        linear 0.25 alpha 0.0
+    show knife slash_animation at t21 zorder 4
+    show blood:
+        pos (400,300)
+    play sound "/mod_assets/sfx/knifeslash.ogg"
+    show dadsuki 4 at h21
+    pause 0.5
+    $ response = dadsuki_hit_response[random.randint(0,2)]
+    d "[response]"
+    show dadsuki 3
+    hide blood
+    if renpy.random.randint(0,2) == 0:
+        call dbdadsuki_attack
+    return
+
+label dbpunch:
+    $ dadsukihp -= 10
+    play sound "mod_assets/sfx/punch1.ogg"
+    show white zorder 4:
+        alpha 0.6
+        linear 0.25 alpha 0.0
+
+    show dadsuki 4 at h21
+    $ response = dadsuki_hit_response[random.randint(0,2)]
+    d "[response]"
+    show dadsuki 3
+    if renpy.random.randint(0,4) == 0:
+        call dbdadsuki_attack
+
+    return
+
+label dbgrenade:
+    if grenade_inventory > 0:
+        $ grenade_inventory -= 1
+        $ dadsukihp -= 30
+        show explosion_animation at t21 zorder 4
+        play sound "/mod_assets/sfx/explosion.ogg"
+        show dadsuki 4 at h21
+        pause 0.5
+        $ response = dadsuki_hit_response[random.randint(0,2)]
+        d "[response]"
+        show dadsuki 3
+        hide blood
+    else:
+        "No grenades available!"
+    if renpy.random.randint(0,2) == 0:
+        call dbdadsuki_attack
+
+    return
+
+label dbmedkit:
+    if medkit_inventory > 0:
+        $ yaseminhp += 20
+        $ medkit_inventory -=1
+
+        play sound "mod_assets/sfx/medshot.ogg"
+        show yasemin 1c at h22
+        "Yasemin take medkit."
+    else:
+        "No medkits available!"
+    if renpy.random.randint(0,3) == 0:
+        call dbdadsuki_attack
+    return
+
+label dbdadsuki_attack:
+    if renpy.random.randint(0,1) == 0:
+        call dbbeerbottle_attack
+    else:
+        call dbdadsuki_punch
+    return
+
+label dbdadsuki_punch:
+    $ yaseminhp -= 10
+    play sound "mod_assets/sfx/punch1.ogg"
+    show white zorder 4:
+        alpha 0.6
+        linear 0.25 alpha 0.0
+    show yasemin 1a at h22
+    $ a_response = dadsuki_attack_response[random.randint(0,2)]
+    d "[a_response]"
+    return
+
+label dbbeerbottle_attack:
+    "Dadsuki hit Yasemin with beer bottle!"
+    $ yaseminhp -= 15
+    show blood:
+        pos (850,100)
+    show yasemin 1a at h22
+    play sound "mod_assets/sfx/bottlehit.ogg"
+    show white zorder 4:
+        alpha 0.6
+        linear 0.25 alpha 0.0
+    $ a_response = dadsuki_attack_response[random.randint(0,2)]
+    d "[a_response]"
+    hide blood
+    show yasemin 4y7
+
+    return
+
+label yasemin_deathdb:
+    stop music fadeout 1.0
+    show yasemin 1a
+    show dadsuki 3
+    y "AHH!I am defeated!"
+    show yasemin:
+        1
+        easeout_cubic 0.5 yoffset 800
+    pause 1
+    pause 0.25
+    play sound fall
+    pause 0.25
+    pause 1
+    scene black
+    with dissolve
+    "But future refuse to change!"
+    call endgame
+    return
